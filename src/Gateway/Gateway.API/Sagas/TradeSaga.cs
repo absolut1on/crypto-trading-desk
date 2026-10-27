@@ -177,7 +177,7 @@ public class TradeSaga
     private async Task EnsureUserExists(Guid userId)
     {
         if (await _db.Users.AnyAsync(u => u.Id == userId)) return;
-        _db.Users.Add(new User { Id = userId, Email = $"{userId}@supabase", Status = UserStatus.Active });
+        _db.Users.Add(new User { Id = userId, Email = $"{userId}@supabase", SupabaseId = userId.ToString(), Status = UserStatus.Active });
         await _db.SaveChangesAsync();
     }
 

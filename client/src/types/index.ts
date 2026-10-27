@@ -10,11 +10,11 @@ export interface Order {
   id: string
   userId: string
   pair: string
-  side: 'Buy' | 'Sell'
-  type: 'Market' | 'Limit' | 'StopLoss'
+  side: number
+  type: number
   quantity: number
   price: number | null
-  status: string
+  status: number
   createdAt: string
 }
 
@@ -23,17 +23,26 @@ export interface Trade {
   orderId: string
   userId: string
   pair: string
-  side: 'Buy' | 'Sell'
+  side: number
   quantity: number
   price: number
   fee: number
-  status: string
+  status: number
   createdAt: string
 }
 
 export interface WalletBalance {
   currency: string
   balance: number
+}
+
+export interface Position {
+  pair: string
+  netQuantity: number
+  avgEntryPrice: number
+  marketPrice: number
+  unrealizedPnl: number
+  tradeCount: number
 }
 
 export interface PriceTicker {
@@ -44,3 +53,8 @@ export interface PriceTicker {
   volume: number
   timestamp: string
 }
+
+export const OrderSideLabel = ['Buy', 'Sell'] as const
+export const OrderTypeLabel = ['Market', 'Limit', 'StopLoss'] as const
+export const OrderStatusLabel = ['Pending', 'Validated', 'Executing', 'PartiallyFilled', 'Filled', 'Cancelled', 'Failed', 'Expired'] as const
+export const TradeStatusLabel = ['Pending', 'Settled', 'Reversed'] as const

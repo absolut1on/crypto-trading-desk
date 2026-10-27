@@ -28,7 +28,7 @@ public class UserController : ControllerBase
         if (user is null)
         {
             var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email") ?? $"{userId}@supabase";
-            user = new User { Id = userId, Email = email, Status = UserStatus.Active };
+            user = new User { Id = userId, Email = email, SupabaseId = userId.ToString(), Status = UserStatus.Active };
             _db.Users.Add(user);
             await _db.SaveChangesAsync();
         }
