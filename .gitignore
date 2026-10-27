@@ -21,6 +21,7 @@ dist/
 .env
 .env.local
 .env.*.local
+.test_token
 appsettings.*.local.json
 
 # Docker

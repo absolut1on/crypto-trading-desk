@@ -1,5 +1,6 @@
 using Gateway.API.Data;
 using Gateway.API.Entities;
+using Gateway.API.Sagas;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,13 +13,22 @@ namespace Gateway.API.Controllers;
 public class OrderController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly TradeSaga _saga;
 
-    public OrderController(AppDbContext db) => _db = db;
+    public OrderController(AppDbContext db, TradeSaga saga)
+    {
+        _db = db;
+        _saga = saga;
+    }
 
     [HttpGet]
-    public async Task<IActionResult> GetOrders([FromQuery] int page = 1, [FromQuery] int size = 20)
+    public async Task<IActionResult> GetOrders([FromQuery] Guid? userId, [FromQuery] int page = 1, [FromQuery] int size = 20)
     {
-        var orders = await _db.Orders
+        var query = _db.Orders.AsQueryable();
+        if (userId.HasValue)
+            query = query.Where(o => o.UserId == userId.Value);
+
+        var orders = await query
             .OrderByDescending(o => o.CreatedAt)
             .Skip((page - 1) * size)
             .Take(size)
@@ -49,7 +59,32 @@ public class OrderController : ControllerBase
 
         _db.Orders.Add(order);
         await _db.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetOrder), new { id = order.Id }, order);
+
+        var (result, error) = await _saga.ExecuteAsync(order);
+        if (error is not null)
+            return UnprocessableEntity(new { order = result, error });
+
+        return CreatedAtAction(nameof(GetOrder), new { id = result.Id }, result);
+    }
+
+    [HttpPost("{id:guid}/cancel")]
+    public async Task<IActionResult> CancelOrder(Guid id)
+    {
+        var order = await _db.Orders.FindAsync(id);
+        if (order is null) return NotFound();
+        if (!StateMachines.OrderStateMachine.CanTransition(order.Status, "Cancel"))
+            return BadRequest(new { error = $"Cannot cancel order in {order.Status} state" });
+
+        order.Status = StateMachines.OrderStateMachine.Transition(order.Status, "Cancel");
+        order.UpdatedAt = DateTime.UtcNow;
+        _db.OrderEvents.Add(new OrderEvent
+        {
+            Id = Guid.NewGuid(),
+            OrderId = order.Id,
+            EventType = "Cancel"
+        });
+        await _db.SaveChangesAsync();
+        return Ok(order);
     }
 }
 

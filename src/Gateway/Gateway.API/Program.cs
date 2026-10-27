@@ -53,6 +53,29 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+
+    if (!db.CryptoPairs.Any())
+    {
+        var pairs = new[] { "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "XRPUSDT", "ADAUSDT", "DOGEUSDT", "DOTUSDT" };
+        foreach (var symbol in pairs)
+        {
+            db.CryptoPairs.Add(new Gateway.API.Entities.CryptoPair
+            {
+                Id = Guid.NewGuid(),
+                Symbol = symbol,
+                BaseCurrency = symbol.Replace("USDT", ""),
+                QuoteCurrency = "USDT",
+                IsActive = true
+            });
+        }
+        db.SaveChanges();
+    }
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
