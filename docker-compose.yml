@@ -1,0 +1,78 @@
+services:
+
+  gateway-api:
+    build:
+      context: .
+      dockerfile: src/Gateway/Gateway.API/Dockerfile
+    container_name: gateway-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=cryptodesk;Username=cryptodesk;Password=cryptodesk
+      - Redis__Connection=redis:6379
+      - Supabase__JwtSecret=your-supabase-jwt-secret
+      - Supabase__Url=https://your-project.supabase.co
+    ports:
+      - "8001:8080"
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  rates-api:
+    build:
+      context: .
+      dockerfile: src/Rates/Rates.API/Dockerfile
+    container_name: rates-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - Redis__Connection=redis:6379
+    ports:
+      - "8002:8080"
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: client
+    ports:
+      - "3000:80"
+    depends_on:
+      - gateway-api
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      - POSTGRES_PASSWORD=cryptodesk
+      - POSTGRES_USER=cryptodesk
+      - POSTGRES_DB=cryptodesk
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.0.0
+    container_name: grafana
+    ports:
+      - "9000:3000"
+    volumes:
+      - grafanadata:/var/lib/grafana
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  grafanadata:
