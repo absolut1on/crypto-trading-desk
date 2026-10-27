@@ -9,8 +9,8 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=cryptodesk;Username=cryptodesk;Password=cryptodesk
       - Redis__Connection=redis:6379
-      - Supabase__JwtSecret=your-supabase-jwt-secret
-      - Supabase__Url=https://your-project.supabase.co
+      - Supabase__JwtSecret=${SUPABASE_JWT_SECRET}
+      - Supabase__Url=${SUPABASE_URL}
     ports:
       - "8001:8080"
     depends_on:

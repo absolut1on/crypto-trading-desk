@@ -35,6 +35,7 @@ builder.Services.AddHangfire(config =>
 builder.Services.AddHangfireServer();
 
 builder.Services.AddScoped<TradeSaga>();
+builder.Services.AddHostedService<PriceStreamConsumer>();
 
 builder.Services.AddControllers();
 
