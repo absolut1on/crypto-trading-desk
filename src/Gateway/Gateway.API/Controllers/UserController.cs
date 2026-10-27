@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Gateway.API.Data;
 using Gateway.API.Entities;
 using Gateway.API.StateMachines;
@@ -15,6 +16,25 @@ public class UserController : ControllerBase
     private readonly AppDbContext _db;
 
     public UserController(AppDbContext db) => _db = db;
+
+    [HttpGet("me")]
+    public async Task<IActionResult> GetMe()
+    {
+        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
+        if (sub is null || !Guid.TryParse(sub, out var userId))
+            return Unauthorized();
+
+        var user = await _db.Users.FindAsync(userId);
+        if (user is null)
+        {
+            var email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email") ?? $"{userId}@supabase";
+            user = new User { Id = userId, Email = email, Status = UserStatus.Active };
+            _db.Users.Add(user);
+            await _db.SaveChangesAsync();
+        }
+
+        return Ok(user);
+    }
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetUser(Guid id)
